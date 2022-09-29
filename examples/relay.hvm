@@ -1,0 +1,24 @@
+
+// Copy signal from pin to onboard LED
+// (polled input)
+
+// (pre-wired simulator at https://wokwi.com/projects/344054272775684690)
+
+LED_Pin = 25
+Inp_Pin = 0
+Delay = 100
+
+Loop =
+    (FFI.call   (Cfun.gpio_get Inp_Pin)             @x
+    (FFI.call   (Cfun.gpio_put LED_Pin x)           @_
+    (FFI.call   (Cfun.sleep_ms Delay)               @_
+                Loop
+    )))
+
+Main =
+    (FFI.call   (CFun.gpio_init    LED_Pin          ) @_
+    (FFI.call   (CFun.gpio_init    Inp_Pin          ) @_
+    (FFI.call   (CFun.gpio_set_dir LED_Pin FFI.true ) @_
+    (FFI.call   (CFun.gpio_set_dir Inp_Pin FFI.false) @_
+                Loop
+    ))))

@@ -1,0 +1,74 @@
+
+// Blink the onboard LED
+// (using monadic IO EDSL, instead of CPS directly)
+
+(Neg FFI.true ) = FFI.false
+(Neg FFI.false) = FFI.true
+
+LED = 25
+OUT = FFI.true
+Lo = FFI.false
+Hi = FFI.true
+Delay = 500
+
+SetupLED =
+    (IO.seq     (IO.ffi (CFun.gpio_init LED))
+                (IO.ffi (CFun.gpio_set_dir LED OUT))
+    )
+
+(BlinkFrom lohi) =
+    (IO.seq     (IO.ffi (CFun.gpio_put LED lohi))
+    (IO.seq     (IO.ffi (CFun.sleep_ms Delay))
+                (BlinkFrom (Neg lohi))
+    ))
+
+Main = 
+    (IO.run
+        (IO.seq SetupLED
+                (BlinkFrom Lo)
+    ))
+
+// Implemtation of IO EDSL below
+// /////////////////////////////
+
+// IO.seq (>>) is defined in terms of IO.bind (>>=)
+(IO.seq ioA ioB) = (IO.bind ioA @_(ioB))
+
+// Notes:
+// * FFI.call looks a bit like a monadic bind function,
+//      but isn't (since it's not associative)
+// * Implementation is via a deep embedding, i.e.
+//      * IO.bind and IO.return are constructors (they don't reduce on their own)
+//      * The IO.run function evalautes an IO expression, stopping for FFI when necessary
+
+
+// Remove IO.return
+(IO.run(
+    IO.bind (IO.return a) a2ioB
+)) =
+(IO.run(
+    a2ioB a
+))
+
+// Stop for FFI requests
+(IO.run(
+    IO.bind    (IO.ffi ffiA)
+                a2ioB
+)) =
+(FFI.call ffiA @a
+    (IO.run(
+        a2ioB a
+    ))
+)
+
+// Rotate out left-nested binds
+(IO.run(
+    IO.bind     (IO.bind    ioA
+                            a2ioB)
+                b2ioC
+)) =
+(IO.run(
+    IO.bind     ioA         @a(
+    IO.bind     (a2ioB a)
+                b2ioC
+)))

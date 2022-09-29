@@ -1,0 +1,12 @@
+
+// Blink the onboard LED
+// (minimal implementation)
+
+From_Hi = (FFI.call (CFun.gpio_put 25 FFI.true ) @_ (FFI.call (CFun.sleep_ms 500) @_ From_Lo))
+From_Lo = (FFI.call (CFun.gpio_put 25 FFI.false) @_ (FFI.call (CFun.sleep_ms 500) @_ From_Hi))
+
+Main =
+    (FFI.call   (CFun.gpio_init    25         ) @_
+    (FFI.call   (CFun.gpio_set_dir 25 FFI.true) @_
+                (From_Hi)
+    ))

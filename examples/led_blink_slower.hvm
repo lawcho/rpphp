@@ -1,0 +1,26 @@
+
+// Blink the onboard LED, increasingly slowly
+
+
+(Neg FFI.true ) = FFI.false
+(Neg FFI.false) = FFI.true
+
+LED = 25
+OUT = FFI.true
+Lo = FFI.false
+Hi = FFI.true
+Delta = 100
+
+(SetupLEDThen rest) =
+    (FFI.call (CFun.gpio_init LED) @_
+    (FFI.call (CFun.gpio_set_dir LED OUT) @_
+    rest
+    ))
+
+(Pattern lohi period) =
+    (FFI.call (CFun.gpio_put LED lohi) @_
+    (FFI.call (CFun.sleep_ms period) @_
+    (Pattern (Neg lohi) (+ period Delta))
+    ))
+
+Main = (SetupLEDThen (Pattern Lo 200))

@@ -1,0 +1,48 @@
+
+// Count on a 7segment dispaly wired to pins on GPIO pins 0-6
+
+// (pre-wired simulator at https://wokwi.com/projects/343961598470128212)
+
+(SetupPinsThen 0 rest) = rest
+(SetupPinsThen pinn rest) =
+    (   FFI.call (CFun.gpio_init (- pinn 1)) @_
+    (   FFI.call (CFun.gpio_set_dir (- pinn 1) FFI.true) @_
+    (   SetupPinsThen (- pinn 1) rest
+    )))
+
+(CountUpFrom 16) = (CountUpFrom 0)
+(CountUpFrom m) =
+    (   FFI.call (CFun.gpio_put_all (SegsToPinout (NybbleToSegs m))) @_
+    (   FFI.call (CFun.sleep_ms 750) @_
+    (   CountUpFrom (+ m 1)
+    )))
+
+Main = (SetupPinsThen 7 (CountUpFrom 0))
+
+
+(SegsToPinout (Segs top top_r bot_r bot bot_l top_l mid)) =
+    (+ (*  1 top  )
+    (+ (*  2 top_r)
+    (+ (*  4 bot_r)
+    (+ (*  8 bot  )
+    (+ (* 16 bot_l)
+    (+ (* 32 top_l)
+       (* 64 mid  )
+    ))))))
+
+(NybbleToSegs  0) = (Segs 0 0 0 0 0 0 1) // "0"
+(NybbleToSegs  1) = (Segs 1 0 0 1 1 1 1) // "1"
+(NybbleToSegs  2) = (Segs 0 0 1 0 0 1 0) // "2"
+(NybbleToSegs  3) = (Segs 0 0 0 0 1 1 0) // "3"
+(NybbleToSegs  4) = (Segs 1 0 0 1 1 0 0) // "4"
+(NybbleToSegs  5) = (Segs 0 1 0 0 1 0 0) // "5"
+(NybbleToSegs  6) = (Segs 0 1 0 0 0 0 0) // "6"
+(NybbleToSegs  7) = (Segs 0 0 0 1 1 1 1) // "7"
+(NybbleToSegs  8) = (Segs 0 0 0 0 0 0 0) // "8"
+(NybbleToSegs  9) = (Segs 0 0 0 1 1 0 0) // "9"
+(NybbleToSegs 10) = (Segs 0 0 0 1 0 0 0) // "A"
+(NybbleToSegs 11) = (Segs 1 1 0 0 0 0 0) // "b"
+(NybbleToSegs 12) = (Segs 0 1 1 0 0 0 1) // "C"
+(NybbleToSegs 13) = (Segs 1 0 0 0 0 1 0) // "d"
+(NybbleToSegs 14) = (Segs 0 1 1 0 0 0 0) // "E"
+(NybbleToSegs 15) = (Segs 0 1 1 1 0 0 0) // "F"

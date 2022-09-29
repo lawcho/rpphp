@@ -1,0 +1,20 @@
+
+// Count in binary on GPIO pins 0-7
+
+// (pre-wired simulator at https://wokwi.com/projects/343960210261410387)
+
+(SetupPinsThen 0 rest) = rest
+(SetupPinsThen pinn rest) =
+    (   FFI.call (CFun.gpio_init (- pinn 1)) @_
+    (   FFI.call (CFun.gpio_set_dir (- pinn 1) FFI.true) @_
+    (   SetupPinsThen (- pinn 1) rest
+    )))
+
+(CountUpFrom 256) = (CountUpFrom 0)
+(CountUpFrom m) =
+    (   FFI.call (CFun.gpio_put_all m) @_
+    (   FFI.call (CFun.sleep_ms 100) @_
+    (   CountUpFrom (+ m 1)
+    )))
+
+Main = (SetupPinsThen 8 (CountUpFrom 0))
