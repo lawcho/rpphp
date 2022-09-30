@@ -1,0 +1,7 @@
+[   CSig Void "sleep_ms" [T_uint32_t]
+,   CSig Void "gpio_init" [T_uint]
+,   CSig Void "gpio_set_dir" [T_uint, T_bool]
+,   CSig Void "gpio_put" [T_uint, T_bool]
+,   CSig Void "gpio_put_all" [T_uint32_t]
+,   CSig (Ret T_bool) "gpio_get" [T_uint]
+]

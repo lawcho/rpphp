@@ -9,7 +9,9 @@ Paste into <https://wokwi.com/projects/new/pi-pico-sdk>
 
 ## Dependencies
 
-Your `hvm` must be from [this GitHub branch](https://github.com/lawcho/HVM/tree/wip/patform-io)
+* `hvm` from [this GitHub branch](https://github.com/lawcho/HVM/tree/wip/patform-io)
+* The Haskell tool `stack`
+* (Optional) `xsel`
 
 ## How to Debug
 
