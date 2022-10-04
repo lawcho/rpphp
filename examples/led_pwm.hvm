@@ -1,0 +1,44 @@
+
+// Cycle the LED through different intensities
+// (using bit-banged PWM)
+
+
+LED = 25
+OUT = FFI.true
+Lo = FFI.false
+Hi = FFI.true
+
+(SetupLEDThen rest) =
+    (FFI.call (CFun.gpio_init LED) @_
+    (FFI.call (CFun.gpio_set_dir LED OUT) @_
+    rest
+    ))
+
+(Loop _ _ 0 after) = after
+(Loop mark_t space_t n after) =
+    (FFI.call (CFun.gpio_put LED Hi)    @_
+    (FFI.call (CFun.sleep_ms mark_t)    @_
+    (FFI.call (CFun.gpio_put LED Lo)    @_
+    (FFI.call (CFun.sleep_ms space_t)   @_
+    (Loop mark_t space_t (- n 1) after)
+    ))))
+
+Period = 20 // period of a waveform (on + off), in milliseconds
+
+Dwell = 5  // how many periods to stay at each brightness level
+
+(Go mark_t rest) = (Loop mark_t (- Period mark_t) Dwell rest)
+
+FadeUp =
+    (Go 00 (Go 01 (Go 02 (Go 03 (Go 03 (Go 05 (Go 06 (Go 07 (Go 08 (Go 09
+    (Go 10 (Go 11 (Go 12 (Go 13 (Go 13 (Go 15 (Go 16 (Go 17 (Go 18 (Go 19
+    FadeDown
+    ))))))))))))))))))))
+
+FadeDown =
+    (Go 20 (Go 19 (Go 18 (Go 17 (Go 16 (Go 15 (Go 14 (Go 13 (Go 12 (Go 11
+    (Go 10 (Go 09 (Go 08 (Go 07 (Go 06 (Go 05 (Go 04 (Go 03 (Go 02 (Go 01
+    FadeUp
+    ))))))))))))))))))))
+
+Main = (SetupLEDThen FadeUp)
