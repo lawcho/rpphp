@@ -7,7 +7,7 @@
     // In debug mode, mock the functions in ffi.hson 
 
 
-    #define DEBUG_PRINTF(...) (0)
+    #define DEBUG_PRINTF(...) (printf(__VA_ARGS__))
 
     // #include<unistd.h>   // name clash with HVM's link() function
     ssize_t read(int fd, void *buf, size_t count);

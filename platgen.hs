@@ -167,6 +167,12 @@ Ptr encode_bool(bool value){
   }
 }
 
+void dump(Worker* wp);
+
+// Platform-specific C code
+
+////GENERATED_HEADER////
+
 // Platform-independent debug helpers
 
 #ifndef DEBUG_PRINTF
@@ -210,10 +216,6 @@ void dump(Worker* wp){
     debug_print_cell(wp->node[i]);
   }
 }
-
-// Platform-specific C code
-
-////GENERATED_HEADER////
 
 // Main loop
 
