@@ -34,8 +34,14 @@ main = do
 
 -- Supported types
 data ArgTy
+    = Prim PrimTy
+    | Ptr String
+  deriving (Read,Eq)
+
+data PrimTy
     = T_uint32_t
     | T_uint
+    | T_size_t
     | T_bool
   deriving (Read,Eq)
 
@@ -49,6 +55,9 @@ data FunSig = CSig RetTy Text [ArgTy]
 
 type RawFunName = Text
 type CompiledName = Text
+type CDefs = Text
+type CExpr = Text
+type CStmt = Text
 
 -- Mimic HVM's name mangling (after prepending "CFun.")
 -- (at time of writing, this was implemented at
@@ -57,16 +66,17 @@ compileName :: RawFunName -> CompiledName
 compileName text = Text.toUpper $
   "_" <> (Text.replace "." "_" $ Text.replace "_" "__" $ "CFun." <> text) <> "_"
 
-printType :: ArgTy -> Text
+printType :: PrimTy -> Text
 printType T_uint = "uint"
 printType T_bool = "bool"
 printType T_uint32_t = "uint32_t"
+printType T_size_t = "size_t"
 
 getCompiledName :: FunSig -> CompiledName
 getCompiledName (CSig _ rName _) = compileName rName
 
 -- Generate a list of (re) #define s for CIDs
-genDefines :: [FunSig] -> Text
+genDefines :: [FunSig] -> CDefs
 genDefines = Text.unlines . map go . zip [0..] . map getCompiledName where
   go (i,compiledName) = Text.unlines $ map Text.unwords $
     [ ["#ifndef",compiledName]
@@ -74,28 +84,34 @@ genDefines = Text.unlines . map go . zip [0..] . map getCompiledName where
     , ["#endif"]
     ]
 
+-- Generate marshalling code
+
+-- HVM -> C
+genDecode :: ArgTy -> CExpr -> CExpr
+genDecode (Prim pt) txt = Text.unwords ["decode_" <> printType pt,"(",txt,")"]
+genDecode (Ptr str) txt = Text.unwords ["(",Text.pack str,") (decode_ptr(",txt,"))"]
+-- C -> HVM
+genEncode :: RetTy -> CExpr -> CExpr
+genEncode (Ret (Prim pt)) txt = Text.unwords ["encode_" <> printType pt,"(",txt,")"]
+genEncode Void            txt = Text.unwords [txt,", encode_void()"]
+genEncode (Ret (Ptr _))   txt = Text.unwords ["encode_ptr((void*)(",txt,"))"]
+
 -- Generate arg-eval/decoding code
-genDecodeArgs :: [ArgTy] -> [Text]
+genDecodeArgs :: [ArgTy] -> [CStmt]
 genDecodeArgs = map go . zip [0..] where
-    go (i,argTy) = Text.unwords $
-      [ "decode_" <> printType argTy
-      , "(whnf(wp, args_p +"
-      , (Text.pack $ show i)
-      , "))"
-      ]
+    go (i,argTy) =
+      genDecode argTy ("whnf(wp, args_p +"<>(Text.pack $ show i)<>")")
 
 -- Generate case-handling code
-genCases :: [FunSig] -> Text
+genCases :: [FunSig] -> CStmt
 genCases = Text.unlines . map go where
   go (CSig retTy rName args) = Text.unlines . map Text.unwords $
     [ ["case",compileName rName,":{"]
-    , ["ret_term =",
-          case retTy of
-            Void     -> "encode_void();"
-            (Ret ty) -> "encode_" <> printType ty]
-    , ["(",rName, "("]
-    , [Text.intercalate ",\n" (genDecodeArgs args)]
-    , ["));"]
+    , [ "ret_term = ("
+      , genEncode retTy $
+          rName <> "(\n" <> Text.intercalate ",\n" (genDecodeArgs args) <> "\n)"
+      , ");"
+      ]
     , ["clear(wp,args_p,",(Text.pack $ show $ length args),");"]
     , ["break;}"]
     ]
@@ -141,16 +157,27 @@ bool decode_bool(Ptr cell){
   return 0;
 }
 
-int decode_uint32_t(Ptr cell) {
+uint32_t decode_uint32_t(Ptr cell) {
   assert(get_tag(cell) == NUM);
   assert(get_num(cell) <= UINT32_MAX);
   return get_num(cell);
 }
 
-int decode_uint(Ptr cell) {
+unsigned int decode_uint(Ptr cell) {
   assert(get_tag(cell) == NUM);
   assert(get_num(cell) <= UINT_MAX);
   return get_num(cell);
+}
+
+size_t decode_size_t(Ptr cell) {
+  assert(get_tag(cell) == NUM);
+  assert(get_num(cell) <= SIZE_MAX);
+  return get_num(cell);
+}
+
+void* decode_ptr(Ptr cell){
+  assert(get_tag(cell) == NUM);
+  return (void*)((size_t) get_num(cell));
 }
 
 // C -> HVM
@@ -165,6 +192,25 @@ Ptr encode_bool(bool value){
   } else {
     return Ctr(0,_FFI_FALSE_,0);
   }
+}
+
+Ptr encode_uint32_t(uint32_t value) {
+  return Num((u64)value);
+}
+
+Ptr encode_uint(unsigned int value) {
+  assert(sizeof(value) <= 7);
+  return Num((u64)value);
+}
+
+Ptr encode_size_t(size_t value) {
+  assert(sizeof(value) <= 7);
+  return Num((u64)value);
+}
+
+Ptr encode_ptr(void* ptr){
+  assert (sizeof(ptr) <= 7); // pointers must fit in 60 bits (= 7.5 bytes)
+  return Num((u64)ptr);
 }
 
 void dump(Worker* wp);

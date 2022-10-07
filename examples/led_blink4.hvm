@@ -1,0 +1,33 @@
+
+// Blink the onboard LED
+// (using a mutable variable)
+
+(Neg FFI.true ) = FFI.false
+(Neg FFI.false) = FFI.true
+
+LED = 25
+OUT = FFI.true
+Lo = FFI.false
+Hi = FFI.true
+Delay = 500
+
+(SetupLEDThen rest) =
+    (FFI.call   (CFun.gpio_init LED)        @_
+    (FFI.call   (CFun.gpio_set_dir LED OUT) @_
+                rest
+    ))
+
+(Blink ptr) =
+    (FFI.call   (CFun.read_bool ptr)                @lohi
+    (FFI.call   (CFun.gpio_put LED lohi)            @_
+    (FFI.call   (CFun.write_bool ptr (Neg lohi))    @_
+    (FFI.call   (CFun.sleep_ms Delay)               @_
+                (Blink ptr)
+    ))))
+
+Main =
+    (SetupLEDThen
+    (FFI.call (CFun.malloc 1)           @ptr
+    (FFI.call (CFun.write_bool ptr Lo)  @_
+        (Blink ptr)
+    )))

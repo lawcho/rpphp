@@ -3,6 +3,14 @@
 
 #include <stdio.h>
 
+// Demo functions for memory access
+bool read_bool(bool* ptr){
+    return *((bool*)ptr);
+}
+void write_bool(bool* ptr,bool value){
+    *((bool*)ptr) = value;
+}
+
 #ifdef DEBUG
     // In debug mode, mock the functions in ffi.hson 
 
