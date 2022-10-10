@@ -1,0 +1,3 @@
+[submodule "hvm2c"]
+	path = hvm2c
+	url = https://github.com/lawcho/hvm
