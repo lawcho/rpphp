@@ -15,7 +15,10 @@ add_executable(generic_app
 )
 
 # Where to fetch the program's dependencies from
-target_link_libraries(generic_app pico_stdlib)
+target_link_libraries(generic_app
+    pico_stdlib
+    hardware_pwm
+)
 
 # Generate .uf2 file as well as .elf
 pico_add_extra_outputs(generic_app)

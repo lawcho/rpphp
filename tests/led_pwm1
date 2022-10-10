@@ -1,6 +1,6 @@
 #! /usr/bin/env bash
 
-diff /dev/stdin <(./debug/led_pwm | head -n 500) <<EOF
+diff /dev/stdin <(./debug/led_pwm1 | head -n 500) <<EOF
 gpio_init(25)
 gpio_set_dir(25,1)
 gpio_put(25,1)

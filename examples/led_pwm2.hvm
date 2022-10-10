@@ -1,0 +1,41 @@
+
+// Cycle the LED through different intensities
+// (using on-chip PWM hardware)
+
+
+LED = 25
+GPIO_FUNC_PWM = 4 // from gpio.h, line 95
+Delay = 200 // milliseconds to spend at each level
+
+(SetupLEDThen rest) =
+    (FFI.call (CFun.gpio_set_function LED GPIO_FUNC_PWM) @_
+    (FFI.call (CFun.pwm_gpio_to_slice_num LED) @ slice_num
+    (FFI.call (CFun.pwm_set_wrap slice_num 20) @_
+    (FFI.call (CFun.pwm_set_chan_level slice_num 0 0) @_    // N.B. The slice's channels must BOTH be initilized
+    (FFI.call (CFun.pwm_set_chan_level slice_num 1 0) @_    //  (even the unused one), or program will crash
+    (FFI.call (CFun.pwm_set_enabled slice_num FFI.true) @_
+    rest
+    ))))))
+
+(Go mark_t rest) =
+    (FFI.call (CFun.pwm_set_gpio_level LED mark_t) @_ 
+    (FFI.call (CFun.sleep_ms Delay) @_
+    rest))
+
+FadeUp =
+    (Go 00 (Go 01 (Go 02 (Go 03 (Go 03 (Go 05 (Go 06 (Go 07 (Go 08 (Go 09
+    (Go 10 (Go 11 (Go 12 (Go 13 (Go 13 (Go 15 (Go 16 (Go 17 (Go 18 (Go 19
+    FadeDown
+    ))))))))))))))))))))
+
+FadeDown =
+    (Go 20 (Go 19 (Go 18 (Go 17 (Go 16 (Go 15 (Go 14 (Go 13 (Go 12 (Go 11
+    (Go 10 (Go 09 (Go 08 (Go 07 (Go 06 (Go 05 (Go 04 (Go 03 (Go 02 (Go 01
+    FadeUp
+    ))))))))))))))))))))
+
+Main = (SetupLEDThen FadeUp)
+
+// This code is adapted from the C examples at
+// https://github.com/raspberrypi/pico-examples/blob/2fb08a028f886624ebc9c938775e054860549159/pwm/hello_pwm/hello_pwm.c
+// https://github.com/raspberrypi/pico-examples/blob/2fb08a028f886624ebc9c938775e054860549159/pwm/led_fade/pwm_led_fade.c

@@ -31,7 +31,16 @@ void write_bool(bool* ptr,bool value){
         printf("gpio_get(%d) (==%d)\n",gpio,c);
         return c;
     }
+
+    // Hardware APIs (not simulated)
+    void gpio_set_function(uint gpio, uint func) { }
+    uint pwm_gpio_to_slice_num(uint gpio) {return 0;}
+    void pwm_set_wrap(uint gpio, uint wrap) { }
+    void pwm_set_enabled(uint gpio, bool b) { }
+    void pwm_set_gpio_level(uint gpio, uint16_t level) { }
+
 #else
     // Outside debug mode, let the pico SDK provide the functions in ffi.hson
     #include "pico/stdlib.h"
+    #include "hardware/pwm.h"
 #endif
