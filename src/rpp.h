@@ -5,10 +5,10 @@
 
 // Demo functions for memory access
 bool read_bool(bool* ptr){
-    return *((bool*)ptr);
+    return *ptr;
 }
 void write_bool(bool* ptr,bool value){
-    *((bool*)ptr) = value;
+    *ptr = value;
 }
 
 #ifdef DEBUG
