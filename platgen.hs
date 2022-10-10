@@ -210,7 +210,7 @@ Ptr encode_size_t(size_t value) {
 
 Ptr encode_ptr(void* ptr){
   assert (sizeof(ptr) <= 7); // pointers must fit in 60 bits (= 7.5 bytes)
-  return Num((u64)ptr);
+  return Num((u64)(size_t)ptr);
 }
 
 void dump(Worker* wp);
