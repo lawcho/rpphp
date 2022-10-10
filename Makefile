@@ -1,4 +1,4 @@
-.PHONY: clean
+.PHONY: clean test
 
 # Simulator-ready C files
 CLIP=0								# optionally copy to clipboard
@@ -29,6 +29,15 @@ build/rpp.plat.c: src/ffi.hson src/rpp.h platgen.hs
 
 hvm2c/target/debug/hvm: hvm2c/Cargo.toml
 	cd hvm2c && cargo build
+
+test:
+	@for TEST in $(shell find tests/ -type f -exec basename {} ";"); do\
+      (echo "Testing example $$TEST..."\
+      && $(MAKE) -s debug/$$TEST \
+      && bash tests/$$TEST \
+      && echo "✅ PASS" \
+      || echo "❌ FAILED") \
+    done
 
 clean:
 	git clean -fdx
