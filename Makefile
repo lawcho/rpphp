@@ -7,6 +7,11 @@ out/%.c: examples/%.hvm build/rpp.plat.c hvm2c/target/debug/hvm Makefile
 	mv examples/$*.c $@
 	if test $(CLIP) = 1; then (xsel -ib <$@) fi
 
+out/%.uf2: out/%.c c2uf2/CMakeLists.txt
+	cp $< c2uf2/generic_app.c
+	cd c2uf2/ && cmake . && make
+	cp c2uf2/generic_app.uf2 $@
+
 debug/%: out/%.c
 	mkdir -p debug/
 	gcc -g -DDEBUG $< -o $@

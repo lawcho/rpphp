@@ -15,7 +15,8 @@ Paste into <https://wokwi.com/projects/new/pi-pico-sdk>
 
 * The Rust tool `cargo` (for building `hvm`)
 * The Haskell tool `stack` (for running `platgen.hs`)
-* (Optional) `xsel`
+* `xsel` (Optional, for copying to clipboard)
+* `cmake`,`gcc`, etc. (Optional, for building bare-metal binaries)
 
 ## How to Debug
 
