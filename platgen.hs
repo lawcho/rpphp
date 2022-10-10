@@ -40,6 +40,7 @@ data ArgTy
 
 data PrimTy
     = T_uint32_t
+    | T_uint16_t
     | T_uint
     | T_size_t
     | T_bool
@@ -70,6 +71,7 @@ printType :: PrimTy -> Text
 printType T_uint = "uint"
 printType T_bool = "bool"
 printType T_uint32_t = "uint32_t"
+printType T_uint16_t = "uint16_t"
 printType T_size_t = "size_t"
 
 getCompiledName :: FunSig -> CompiledName
@@ -163,6 +165,12 @@ uint32_t decode_uint32_t(Ptr cell) {
   return get_num(cell);
 }
 
+uint16_t decode_uint16_t(Ptr cell) {
+  assert(get_tag(cell) == NUM);
+  assert(get_num(cell) <= UINT16_MAX);
+  return get_num(cell);
+}
+
 unsigned int decode_uint(Ptr cell) {
   assert(get_tag(cell) == NUM);
   assert(get_num(cell) <= UINT_MAX);
@@ -197,6 +205,11 @@ Ptr encode_bool(bool value){
 Ptr encode_uint32_t(uint32_t value) {
   return Num((u64)value);
 }
+
+Ptr encode_uint16_t(uint16_t value) {
+  return Num((u64)value);
+}
+
 
 Ptr encode_uint(unsigned int value) {
   assert(sizeof(value) <= 7);
