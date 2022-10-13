@@ -18,8 +18,7 @@ import Text.RawString.QQ
 
 main :: IO()
 main = do
-  [ffi_file] <- getArgs
-  (PlatgenConfig sigs rawC) <- (read <$> readFile ffi_file) :: IO Config
+  (PlatgenConfig sigs rawC) <- (read <$> getContents) :: IO Config
 
   putStrLn
     $ Text.unpack

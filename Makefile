@@ -26,11 +26,11 @@ debug/%: build/debug/%.c
 
 build/rpp.plat.c: src/rpp.hson platgen.hs
 	mkdir -p build/
-	./platgen.hs $< >$@
+	./platgen.hs <$< >$@
 
 build/debug.plat.c: src/debug.hson platgen.hs
 	mkdir -p build/
-	./platgen.hs $< >$@
+	./platgen.hs <$< >$@
 
 hvm2c/target/debug/hvm: hvm2c/Cargo.toml
 	cd hvm2c && cargo build
