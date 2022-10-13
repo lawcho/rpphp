@@ -1,41 +1,8 @@
-.PHONY: clean test
+## Makefile for building RPPHP examples
 
-# Simulator-ready C files
-out/%.c: examples/%.hvm build/rpp.plat.c hvm2c/target/debug/hvm Makefile
-	./hvm2c/target/debug/hvm -M 100k c $< --single-thread -P build/rpp.plat.c
-	mkdir -p out/
-	mv examples/$*.c $@
-
-# Bare-metal binaries, for running on the RPP
-out/%.uf2: out/%.c c2uf2/CMakeLists.txt
-	cp $< c2uf2/generic_app.c
-	cd c2uf2/ && cmake . && make
-	cp c2uf2/generic_app.uf2 $@
-
-# Debug C files
-build/debug/%.c: examples/%.hvm build/debug.plat.c hvm2c/target/debug/hvm Makefile
-	./hvm2c/target/debug/hvm -M 100k c $< --single-thread -P build/debug.plat.c
-	mkdir -p build/debug/
-	mv examples/$*.c $@
-
-# Debug binaries, for running on the host
-debug/%: build/debug/%.c
-	mkdir -p debug/
-	gcc -g $< -o $@
-	chmod +x $@
-
-build/rpp.plat.c: src/rpp.hson platgen.hs
-	mkdir -p build/
-	./platgen.hs <$< >$@
-
-build/debug.plat.c: src/debug.hson platgen.hs
-	mkdir -p build/
-	./platgen.hs <$< >$@
-
-hvm2c/target/debug/hvm: hvm2c/Cargo.toml
-	cd hvm2c && cargo build
-
+# Run automated tests
 test:
+	@echo "Running tests..."
 	@for TEST in $(shell find tests/ -type f -exec basename {} ";"); do\
       (echo "Testing example $$TEST..."\
       && $(MAKE) -s debug/$$TEST \
@@ -43,16 +10,54 @@ test:
       && echo "✅ PASS" \
       || echo "❌ FAILED") \
     done
+	@echo "Done running tests."
+
+# Copy simulator-ready C files to clipboard
+clip/%: build/rpp/%.c
+	xsel -ib <$<
+
+# Upload bare-metal binaries to RPP
+UPLOAD_PATH=/media/$(USER)/RPI-RP2
+upload/%: build/rpp/%.uf2
+	@until test -d $(UPLOAD_PATH); do echo "Waiting for RPP to be mounted at $(UPLOAD_PATH)"; sleep 1; done
+	cp $< $(UPLOAD_PATH)
 
 clean:
 	git clean -fdx
 
-# Upload bare-metal binaries to RPP
-UPLOAD_PATH=/media/$(USER)/RPI-RP2
-upload/%: out/%.uf2
-	@until test -d $(UPLOAD_PATH); do echo "Waiting for RPP to be mounted at $(UPLOAD_PATH)"; sleep 1; done
-	cp $< $(UPLOAD_PATH)
+## Intermediate build targets
 
-# Copy simulator-ready C files to clipboard
-clip/%: out/%.c
-	xsel -ib <$<
+# Platform files
+build/%.plat.c: src/%.hson platgen.hs Makefile
+	mkdir -p build/
+	./platgen.hs <$< >$@
+
+# HVM compiler
+hvm2c/target/debug/hvm: hvm2c/Cargo.toml
+	cd hvm2c && cargo build
+
+.SECONDEXPANSION:	# enable GNU make's lazy $$(...) syntax
+
+# Combined C files
+build/%.c: examples/$$(shell basename $$*).hvm build/$$(shell dirname $$*).plat.c hvm2c/target/debug/hvm Makefile
+	mkdir -p $(shell dirname $@)
+	./$(word 3,$^) -M 100k c $(word 1,$^) --single-thread -P $(word 2,$^)
+	mv examples/$(shell basename $*).c $@
+
+# Bare-metal binaries, for running on the RPP
+build/rpp/%.uf2 build/rpp/%.hex build/rpp/%.elf: build/rpp/%.c c2uf2/CMakeLists.txt Makefile
+	mkdir -p build/rpp/
+	cp $< c2uf2/generic_app.c
+	cd c2uf2/ && cmake . && make
+	cp c2uf2/generic_app.uf2 build/rpp/$*.uf2
+	cp c2uf2/generic_app.hex build/rpp/$*.hex
+	cp c2uf2/generic_app.elf build/rpp/$*.elf
+
+# Debug binaries, for running on the host
+build/debug/%.run: build/debug/%.c Makefile
+	mkdir -p build/debug/
+	gcc -g $< -o $@
+	chmod +x $@
+
+.PHONY: clean test # clip/* and upload/* should also be .PHONY, but make can't do that easily
+.SECONDARY:	# leave all intermediate targets in place
