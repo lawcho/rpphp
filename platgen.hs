@@ -18,15 +18,14 @@ import Text.RawString.QQ
 
 main :: IO()
 main = do
-  [ffi_file, hdr_file] <- getArgs
-  ffi <- (read <$> readFile ffi_file) :: IO [FunSig]
-  hdr <- (Text.pack <$> readFile hdr_file)
+  [ffi_file] <- getArgs
+  (PlatgenConfig sigs rawC) <- (read <$> readFile ffi_file) :: IO Config
 
   putStrLn
     $ Text.unpack
-    $ Text.replace "////GENERATED_HEADER////" hdr
-    $ Text.replace "////GENERATED_CID_IFNDEF_DEFINES////" (genDefines ffi)
-    $ Text.replace "////GENERATED_CASES////" (genCases ffi)
+    $ Text.replace "////GENERATED_CID_IFNDEF_DEFINES////" (genDefines sigs)
+    $ Text.replace "////GENERATED_RAW_C_TO_INJECT////" (Text.unlines rawC)
+    $ Text.replace "////GENERATED_CASES////" (genCases sigs)
     $ Text.pack template
 
 -- Implementation details below this line
@@ -59,6 +58,12 @@ type CompiledName = Text
 type CDefs = Text
 type CExpr = Text
 type CStmt = Text
+
+data Config = PlatgenConfig
+  { ffiFunSigs :: [FunSig]
+  , rawCToInject :: [CDefs]
+  }
+  deriving (Read)
 
 -- Mimic HVM's name mangling (after prepending "CFun.")
 -- (at time of writing, this was implemented at
@@ -146,6 +151,10 @@ template = [r|
 
 ////GENERATED_CID_IFNDEF_DEFINES////
 
+// Platfrom-specific raw C code
+
+////GENERATED_RAW_C_TO_INJECT////
+
 // Platform-independent marshalling functions
 
 // HVM -> C
@@ -227,10 +236,6 @@ Ptr encode_ptr(void* ptr){
 }
 
 void dump(Worker* wp);
-
-// Platform-specific C code
-
-////GENERATED_HEADER////
 
 // Platform-independent debug helpers
 

@@ -1,0 +1,26 @@
+PlatgenConfig
+{   ffiFunSigs =
+    [   CSig Void "sleep_ms" [Prim T_uint32_t]
+    ,   CSig Void "gpio_init" [Prim T_uint]
+    ,   CSig Void "gpio_set_dir" [Prim T_uint, Prim T_bool]
+    ,   CSig Void "gpio_put" [Prim T_uint, Prim T_bool]
+    ,   CSig Void "gpio_put_all" [Prim T_uint32_t]
+    ,   CSig (Ret (Prim T_bool)) "gpio_get" [Prim T_uint]
+    ,   CSig (Ret (Ptr "void*")) "malloc" [Prim T_size_t]
+    ,   CSig Void                "write_bool" [Ptr "bool*", Prim T_bool]
+    ,   CSig (Ret (Prim T_bool)) "read_bool"  [Ptr "bool*"]
+    ]
+,   rawCToInject = 
+    [   "#include <stdio.h>"
+    ,   "#define DEBUG_PRINTF(...) (printf(__VA_ARGS__))"
+    ,   "bool read_bool(bool* ptr){return *ptr;}"
+    ,   "void write_bool(bool* ptr,bool value){*ptr = value;}"
+    ,   "ssize_t read(int fd, void *buf, size_t count);"
+    ,   "void gpio_put(uint gpio, bool value) {printf(\"gpio_put(%d,%d)\\n\",gpio,value);}"
+    ,   "void gpio_put_all(uint32_t value) {printf(\"gpio_put_all(%d)\\n\",value);}"
+    ,   "void gpio_init(uint gpio) {printf(\"gpio_init(%d)\\n\",gpio);}"
+    ,   "void gpio_set_dir(uint gpio,bool out) {printf(\"gpio_set_dir(%d,%d)\\n\",gpio,out);}"
+    ,   "void sleep_ms(uint32_t ms) {printf(\"sleep_ms(%d)\\n\",ms);}"
+    ,   "bool gpio_get(uint gpio) {char c;read(0,&c,1);printf(\"gpio_get(%d) (==%d)\\n\",gpio,c);return c;}"
+    ]
+}

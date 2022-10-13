@@ -12,15 +12,25 @@ out/%.uf2: out/%.c c2uf2/CMakeLists.txt
 	cd c2uf2/ && cmake . && make
 	cp c2uf2/generic_app.uf2 $@
 
+# Debug C files
+build/debug/%.c: examples/%.hvm build/debug.plat.c hvm2c/target/debug/hvm Makefile
+	./hvm2c/target/debug/hvm -M 100k c $< --single-thread -P build/debug.plat.c
+	mkdir -p build/debug/
+	mv examples/$*.c $@
+
 # Debug binaries, for running on the host
-debug/%: out/%.c
+debug/%: build/debug/%.c
 	mkdir -p debug/
-	gcc -g -DDEBUG $< -o $@
+	gcc -g $< -o $@
 	chmod +x $@
 
-build/rpp.plat.c: src/ffi.hson src/rpp.h platgen.hs
+build/rpp.plat.c: src/rpp.hson platgen.hs
 	mkdir -p build/
-	./platgen.hs src/ffi.hson src/rpp.h >$@
+	./platgen.hs $< >$@
+
+build/debug.plat.c: src/debug.hson platgen.hs
+	mkdir -p build/
+	./platgen.hs $< >$@
 
 hvm2c/target/debug/hvm: hvm2c/Cargo.toml
 	cd hvm2c && cargo build
